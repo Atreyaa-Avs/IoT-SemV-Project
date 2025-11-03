@@ -1,11 +1,59 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import mqtt, { MqttClient } from "mqtt";
 
-const Switcher = ({ size = 1 } : {size: number}) => {
+interface SwitcherProps {
+  size?: number;
+  brokerUrl: string; // e.g. "ws://192.168.1.42:9001"
+  topic: string;     // e.g. "esp32/relay"
+}
+
+const Switcher = ({ size = 1, brokerUrl, topic }: SwitcherProps) => {
   const [isChecked, setIsChecked] = useState(false);
+  const [client, setClient] = useState<MqttClient | null>(null);
+  const [connected, setConnected] = useState(false);
 
-  const handleCheckboxChange = () => setIsChecked(!isChecked);
+  // Connect to MQTT broker
+  useEffect(() => {
+    const mqttClient = mqtt.connect(brokerUrl);
+    setClient(mqttClient);
 
-  // Dynamic scaling — all dimensions multiply by `size`
+    mqttClient.on("connect", () => {
+      console.log("✅ Connected to MQTT Broker");
+      setConnected(true);
+    });
+
+    mqttClient.on("error", (err) => {
+      console.error("❌ MQTT Connection Error:", err);
+      mqttClient.end();
+    });
+
+    return () => {
+      mqttClient.end();
+    };
+  }, [brokerUrl]);
+
+  // Log when relay state changes
+  useEffect(() => {
+    if (isChecked) {
+      console.log("🔌 Relay ON");
+    } else {
+      console.log("⚡ Relay OFF");
+    }
+  }, [isChecked]);
+
+  const handleCheckboxChange = () => {
+    const newState = !isChecked;
+    setIsChecked(newState);
+
+    if (client && connected) {
+      const message = newState ? "ON" : "OFF";
+      client.publish(topic, message);
+      console.log(`📡 Published "${message}" to ${topic}`);
+    } else {
+      console.warn("⚠️ Not connected to MQTT broker");
+    }
+  };
+
   const scale = {
     trackWidth: 56 * size,
     trackHeight: 20 * size,
@@ -51,9 +99,7 @@ const Switcher = ({ size = 1 } : {size: number}) => {
         >
           <span
             className={`rounded-full border transition-colors duration-300 ${
-              isChecked
-                ? "bg-blue-500 border-white"
-                : "bg-black border-white"
+              isChecked ? "bg-blue-500 border-white" : "bg-black border-white"
             }`}
             style={{
               width: 12 * size,

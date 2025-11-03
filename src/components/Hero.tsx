@@ -1,28 +1,36 @@
+"use client";
 import { useEffect, useState } from "react";
 import Switcher from "./Switcher";
 import { Lightbulb, Tv, AirVent } from "lucide-react";
 import Reading from "./Readings";
+import { subscribeToReadings } from "../lib/readings";
 
 const Hero = () => {
   const [rating, setRating] = useState(Ratings[0].title);
-  const [current, setCurrent] = useState(10);
+  const [current, setCurrent] = useState(0);
 
+  // Subscribe to live current readings via MQTT
   useEffect(() => {
-    if (current > 10 && current <= 30) {
-      setRating(Ratings[1].title);
-    } else if (current > 30) {
-      setRating(Ratings[2].title);
-    } else {
-      setRating(Ratings[0].title);
-    }
+    const unsubscribe = subscribeToReadings((data) => {
+      setCurrent(data.current || 0);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Dynamically adjust power load category
+  useEffect(() => {
+    if (current > 10 && current <= 30) setRating(Ratings[1].title);
+    else if (current > 30) setRating(Ratings[2].title);
+    else setRating(Ratings[0].title);
   }, [current]);
 
   const activeRating = Ratings.find((r) => r.title === rating);
 
   return (
     <div className="flex bg-accent p-4 mt-4 rounded-xl gap-6">
-      {/* Image Section */}
+      {/* Left: Device Info + Switch */}
       <div className="flex items-center gap-4">
+        {/* Image */}
         <div>
           <div className="overflow-hidden rounded-2xl size-72">
             <img
@@ -32,7 +40,8 @@ const Hero = () => {
             />
           </div>
         </div>
-        {/* Info Section */}
+
+        {/* Info */}
         <div className="flex flex-col gap-5 mt-2">
           <h1 className="inline-flex flex-col text-lg">
             Smart Plug is Connected to:{" "}
@@ -48,15 +57,22 @@ const Hero = () => {
               {rating}
             </span>
           </h1>
-          {/* Toggle */}
+
+          {/* Relay Toggle via MQTT */}
           <div className="flex flex-col w-fit gap-1">
             <div className="flex justify-between text-sm font-medium text-gray-700">
               <p>Off</p>
               <p>On</p>
             </div>
-            <Switcher size={1.5} />
+            {/* 🔌 Pass broker + topic here */}
+            <Switcher
+              size={1.5}
+              brokerUrl="wss://test.mosquitto.org:8081"
+              topic="power/relay"
+            />
           </div>
-          {/* Appliance Info Section */}
+
+          {/* Appliance Info */}
           <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm text-sm text-gray-100 space-y-2">
             <h2
               className={`font-semibold flex items-center gap-2 -ml-4 ${
@@ -83,13 +99,13 @@ const Hero = () => {
         </div>
       </div>
 
-      {/* Readings Section */}
+      {/* Right: Live Readings (MQTT updates) */}
       <div className="grid mt-2 grid-cols-2 3xl:grid-cols-3 gap-4">
-        <Reading title="Current" titleSvg="/Current.svg" unit={"A"} />
-        <Reading title="Voltage" titleSvg="/Voltage.svg" unit={"V"} />
-        <Reading title="Power" titleSvg="/Power.svg" unit={"W"} />
-        <Reading title="Energy" titleSvg="/Energy.svg" unit={"kWh"} />
-        <Reading title="Frequency" titleSvg="/Frequency.svg" unit={"Hz"} />
+        <Reading title="Current" titleSvg="/Current.svg" unit="A" />
+        <Reading title="Voltage" titleSvg="/Voltage.svg" unit="V" />
+        <Reading title="Power" titleSvg="/Power.svg" unit="W" />
+        <Reading title="Energy" titleSvg="/Energy.svg" unit="kWh" />
+        <Reading title="Frequency" titleSvg="/Frequency.svg" unit="Hz" />
         <Reading title="Power Factor" titleSvg="/PowerFactor.svg" />
       </div>
     </div>
@@ -98,6 +114,7 @@ const Hero = () => {
 
 export default Hero;
 
+// -------------------- Power Rating Categories --------------------
 const Ratings = [
   {
     title: "Low Power Load (5-10A)",
