@@ -1,4 +1,3 @@
-// readings.ts
 import mqtt from "mqtt";
 
 type ReadingData = {
@@ -7,7 +6,7 @@ type ReadingData = {
   power: number;
   energy: number;
   frequency: number;
-  powerFactor: number;
+  powerfactor: number; // ✅ lowercase and consistent
 };
 
 // Initialize readings
@@ -17,17 +16,17 @@ const readings: ReadingData = {
   power: 0,
   energy: 0,
   frequency: 0,
-  powerFactor: 0,
+  powerfactor: 0,
 };
 
-// List of callbacks (for live update in components)
+// List of callbacks (for live updates in components)
 let subscribers: ((data: ReadingData) => void)[] = [];
 
 // MQTT Client Setup
 const client = mqtt.connect("wss://test.mosquitto.org:8081");
 
 client.on("connect", () => {
-  console.log("Connected to MQTT Broker!");
+  console.log("✅ Connected to MQTT Broker!");
 
   const topics = [
     "power/current",
@@ -35,7 +34,7 @@ client.on("connect", () => {
     "power/power",
     "power/energy",
     "power/frequency",
-    "power/powerFactor",
+    "power/powerfactor", // ✅ match ESP32 topic
   ];
 
   topics.forEach((topic) => client.subscribe(topic));
@@ -60,16 +59,16 @@ client.on("message", (topic, message) => {
     case "power/frequency":
       readings.frequency = val;
       break;
-    case "power/powerFactor":
-      readings.powerFactor = val;
+    case "power/powerfactor":
+      readings.powerfactor = val;
       break;
   }
 
-  // Notify all subscribers whenever data changes
+  // Notify all subscribers when data changes
   subscribers.forEach((cb) => cb({ ...readings }));
 });
 
-// ✅ Function to subscribe to live readings
+// ✅ Subscribe to live readings
 export function subscribeToReadings(callback: (data: ReadingData) => void) {
   subscribers.push(callback);
   // Send initial state immediately
@@ -81,7 +80,7 @@ export function subscribeToReadings(callback: (data: ReadingData) => void) {
   };
 }
 
-// ✅ Optional: function to get current readings without subscribing
+// ✅ Optional: Get current readings without subscribing
 export function getReadings(): ReadingData {
   return { ...readings };
 }

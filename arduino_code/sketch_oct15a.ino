@@ -1,10 +1,10 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <HardwareSerial.h> //ignore
+#include <HardwareSerial.h>
 
 // -------------------- Wi-Fi Config --------------------
-const char* ssid = "RVU";
-const char* password = "Rvu$1234";
+const char* ssid = "Savitha@";
+const char* password = "avsbs1968";
 
 // -------------------- MQTT Config --------------------
 const char* mqtt_server = "test.mosquitto.org";
@@ -101,28 +101,25 @@ bool readPZEM(float &voltage, float &current, float &power, float &energy, float
   return true;
 }
 
-// -------------------- MQTT Relay Control Callback --------------------
+// -------------------- MQTT Callback --------------------
 void callback(char* topic, byte* payload, unsigned int length) {
   String message;
   for (unsigned int i = 0; i < length; i++) {
     message += (char)payload[i];
   }
 
-  Serial.printf("📩 MQTT Message on [%s]: %s\n", topic, message.c_str());
-
   if (String(topic) == "power/relay") {
     if (message == "ON") {
       relayState = true;
       digitalWrite(RELAY_PIN, HIGH);
-      Serial.println("⚡ Relay turned ON");
-    } else if (message == "OFF") {
+    } 
+    else if (message == "OFF") {
       relayState = false;
       digitalWrite(RELAY_PIN, LOW);
-      Serial.println("🚫 Relay turned OFF");
-    } else if (message == "TOGGLE") {
+    } 
+    else if (message == "TOGGLE") {
       relayState = !relayState;
       digitalWrite(RELAY_PIN, relayState ? HIGH : LOW);
-      Serial.printf("🔁 Relay toggled %s\n", relayState ? "ON" : "OFF");
     }
   }
 }
@@ -176,13 +173,27 @@ void loop() {
   if (millis() - lastPublish > 3000) { // every 3 seconds
     float voltage, current, power, energy, frequency, pf;
     if (readPZEM(voltage, current, power, energy, frequency, pf)) {
+
+      // ✅ Publish data (all lowercase "powerfactor")
       client.publish("power/voltage", String(voltage, 2).c_str());
       client.publish("power/current", String(current, 3).c_str());
       client.publish("power/power", String(power, 2).c_str());
       client.publish("power/energy", String(energy, 3).c_str());
       client.publish("power/frequency", String(frequency, 2).c_str());
-      client.publish("power/powerFactor", String(pf, 2).c_str());
+      client.publish("power/powerfactor", String(pf, 2).c_str());
       client.publish("power/relayStatus", relayState ? "ON" : "OFF");
+
+      // Print readings to Serial
+      Serial.println("\n📊 Live Readings:");
+      Serial.printf("Voltage: %.2f V\n", voltage);
+      Serial.printf("Current: %.3f A\n", current);
+      Serial.printf("Power: %.2f W\n", power);
+      Serial.printf("Energy: %.3f kWh\n", energy);
+      Serial.printf("Frequency: %.2f Hz\n", frequency);
+      Serial.printf("Power Factor: %.2f\n", pf);
+      Serial.printf("Relay State: %s\n", relayState ? "ON" : "OFF");
+      Serial.println("------------------------------------");
+
     } else {
       Serial.println("⚠️ Failed to read PZEM data");
     }

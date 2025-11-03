@@ -19,9 +19,10 @@ const Hero = () => {
 
   // Dynamically adjust power load category
   useEffect(() => {
-    if (current > 10 && current <= 30) setRating(Ratings[1].title);
-    else if (current > 30) setRating(Ratings[2].title);
-    else setRating(Ratings[0].title);
+    if (current == 0) setRating(Ratings[0].title);
+    else if (current > 0 && current <= 0.05) setRating(Ratings[2].title);
+    else if (current > 10) setRating(Ratings[3].title);
+    else setRating(Ratings[1].title);
   }, [current]);
 
   const activeRating = Ratings.find((r) => r.title === rating);
@@ -29,7 +30,7 @@ const Hero = () => {
   return (
     <div className="flex bg-accent p-4 mt-4 rounded-xl gap-6">
       {/* Left: Device Info + Switch */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 w-max">
         {/* Image */}
         <div>
           <div className="overflow-hidden rounded-2xl size-72">
@@ -101,12 +102,47 @@ const Hero = () => {
 
       {/* Right: Live Readings (MQTT updates) */}
       <div className="grid mt-2 grid-cols-2 3xl:grid-cols-3 gap-4">
-        <Reading title="Current" titleSvg="/Current.svg" unit="A" />
-        <Reading title="Voltage" titleSvg="/Voltage.svg" unit="V" />
-        <Reading title="Power" titleSvg="/Power.svg" unit="W" />
-        <Reading title="Energy" titleSvg="/Energy.svg" unit="kWh" />
-        <Reading title="Frequency" titleSvg="/Frequency.svg" unit="Hz" />
-        <Reading title="Power Factor" titleSvg="/PowerFactor.svg" />
+        <Reading
+          title="Current"
+          titleSvg="/Current.svg"
+          unit="A"
+          graphColor="var(--chart-2)"
+        />{" "}
+        {/* Blue */}
+        <Reading
+          title="Voltage"
+          titleSvg="/Voltage.svg"
+          unit="V"
+          graphColor="var(--chart-3)"
+        />{" "}
+        {/* Yellow */}
+        <Reading
+          title="Power"
+          titleSvg="/Power.svg"
+          unit="W"
+          graphColor="var(--chart-1)"
+        />{" "}
+        {/* Red */}
+        <Reading
+          title="Energy"
+          titleSvg="/Energy.svg"
+          unit="kWh"
+          graphColor="var(--chart-4)"
+        />{" "}
+        {/* Green */}
+        <Reading
+          title="Frequency"
+          titleSvg="/Frequency.svg"
+          unit="Hz"
+          graphColor="var(--chart-5)"
+        />{" "}
+        {/* Purple */}
+        <Reading
+          title="Power Factor"
+          titleSvg="/PowerFactor.svg"
+          graphColor="var(--chart-6)"
+        />{" "}
+        {/* Orange */}
       </div>
     </div>
   );
@@ -116,6 +152,16 @@ export default Hero;
 
 // -------------------- Power Rating Categories --------------------
 const Ratings = [
+  {
+    title: "No Load (0A)",
+    image: "/lowload.jpg",
+    heading: "Typical Low Load Appliances",
+    appliances: [
+      "LED bulbs, lamps, or night lights",
+      "Mobile and laptop chargers",
+      "Wi-Fi routers and alarm clocks",
+    ],
+  },
   {
     title: "Low Power Load (5-10A)",
     image: "/lowload.jpg",
