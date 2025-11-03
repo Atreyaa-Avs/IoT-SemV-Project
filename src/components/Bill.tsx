@@ -1,13 +1,21 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ExternalLink, ReceiptIndianRupee } from "lucide-react";
-import { Graph } from "./ui/Graph";
 import ToolTip from "./ToolTip";
 import { subscribeToReadings } from "../lib/readings";
+import * as tf from "@tensorflow/tfjs";
+import GraphforPredictiton from "./ui/GraphforPrediction";
+
+type Point = { time: string; energy: number };
+
+const MIN_POINTS = 30;
+const PREDICT_STEPS = 30;
 
 const Bill = () => {
-  // live and predicted data (example structure)
-  const [chartData, setChartData] = useState<{ time: string; current: number; predicted: number }[]>([]);
+  const [chartData, setChartData] = useState<Point[]>([]);
+  const [predictedData, setPredictedData] = useState<Point[]>([]);
+  const [isTraining, setIsTraining] = useState(false);
+
   const [billValues, setBillValues] = useState({
     energy: 0,
     fixed: 0,
@@ -17,12 +25,16 @@ const Bill = () => {
     total: 0,
   });
 
+  const energyRef = useRef<number[]>([]);
+
+  // Subscribe to live readings
   useEffect(() => {
-    const unsubscribe = subscribeToReadings((data) => {
-      const currentEnergy = data.energy || 0;
-      const predictedEnergy = currentEnergy * 1.02; // simulate +2% growth
-      const energyCharge = currentEnergy * 6.75; // example tariff ₹6.75 per kWh
-      const fixedCharge = 50; // example fixed charge
+    const unsub = subscribeToReadings((data) => {
+      const energy_kWh = Number(data.energy || 0);
+      const predictedEnergy = energy_kWh * 1.02;
+
+      const energyCharge = energy_kWh * 6.75;
+      const fixedCharge = 50;
       const subtotal = energyCharge + fixedCharge;
       const fac = subtotal * 0.05;
       const tax = subtotal * 0.09 + 50;
@@ -37,24 +49,86 @@ const Bill = () => {
         total,
       });
 
-      setChartData((prev) => [
-        ...prev.slice(-9),
-        {
-          time: new Date().toLocaleTimeString("en-IN", { minute: "2-digit", second: "2-digit" }),
-          current: currentEnergy,
-          predicted: predictedEnergy,
-        },
-      ]);
+      setChartData((prev) => {
+        const next = [
+          ...prev.slice(-99),
+          {
+            time: new Date().toLocaleTimeString("en-IN", {
+              minute: "2-digit",
+              second: "2-digit",
+            }),
+            energy: energy_kWh,
+          },
+        ];
+        energyRef.current = next.map((d) => d.energy);
+        return next;
+      });
+    });
+    return () => unsub?.();
+  }, []);
+
+  // When we have enough data, train regression and predict
+  useEffect(() => {
+    const energies = energyRef.current;
+    if (energies.length >= MIN_POINTS && !isTraining) {
+      runRegressionAndPredict(energies)
+        .then((preds) => setPredictedData(preds))
+        .catch((err) => console.error("Regression error:", err));
+    }
+  }, [chartData]);
+
+  async function runRegressionAndPredict(energies: number[]): Promise<Point[]> {
+    setIsTraining(true);
+
+    // Prepare training data (x = index, y = energy)
+    const xs = tf.tensor1d(energies.map((_, i) => i));
+    const ys = tf.tensor1d(energies);
+
+    // Simple Dense Regression model
+    const model = tf.sequential();
+    model.add(tf.layers.dense({ inputShape: [1], units: 16, activation: "relu" }));
+    model.add(tf.layers.dense({ units: 8, activation: "relu" }));
+    model.add(tf.layers.dense({ units: 1 }));
+
+    model.compile({ optimizer: tf.train.adam(0.01), loss: "meanSquaredError" });
+
+    // Train the model
+    await model.fit(xs, ys, { epochs: 80, verbose: 0 });
+
+    // Predict next N values
+    const nextXs = tf.tensor1d(
+      Array.from({ length: PREDICT_STEPS }, (_, i) => energies.length + i)
+    );
+    const predYs = model.predict(nextXs) as tf.Tensor;
+    const preds = Array.from(await predYs.data());
+
+    // Cleanup
+    xs.dispose();
+    ys.dispose();
+    nextXs.dispose();
+    predYs.dispose();
+    model.dispose();
+    tf.disposeVariables();
+
+    // Build predicted data points with timestamps
+    const lastTime = new Date();
+    const predicted: Point[] = preds.map((p, i) => {
+      const t = new Date(lastTime.getTime() + (i + 1) * 1000);
+      return {
+        time: t.toLocaleTimeString("en-IN", { minute: "2-digit", second: "2-digit" }),
+        energy: p,
+      };
     });
 
-    return () => unsubscribe();
-  }, []);
+    setIsTraining(false);
+    return predicted;
+  }
 
   return (
     <div className="flex flex-col bg-accent rounded-xl mt-2 h-full p-3">
       <h3 className="inline-flex gap-1 text-2xl font-semibold items-center my-2">
         <ReceiptIndianRupee />
-        Bill Estimation
+        Bill Estimation {isTraining ? "(Training...)" : ""}
         <a
           href="https://bescom.karnataka.gov.in/storage/pdf-files/RA%20section/ElectricityTariff2025.pdf"
           target="_blank"
@@ -69,13 +143,7 @@ const Bill = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-auto">
         {/* Left side Graph */}
         <div className="my-auto">
-          <Graph
-            data={chartData}
-            config={{
-              current: { label: "Current", color: "var(--chart-1)" },
-              predicted: { label: "Predicted", color: "var(--chart-2)" },
-            }}
-          />
+          <GraphforPredictiton actualData={chartData} predictedData={predictedData} />
         </div>
 
         {/* Right side Table */}
@@ -83,16 +151,22 @@ const Bill = () => {
           <table className="min-w-full border border-gray-300 text-sm md:text-base text-left">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border-b border-gray-300 px-3 py-2 font-semibold">Charges</th>
-                <th className="border-b border-gray-300 px-3 py-2 font-semibold text-center">Current</th>
-                <th className="border-b border-gray-300 px-3 py-2 font-semibold text-center">Predicted</th>
+                <th className="border-b border-gray-300 px-3 py-2 font-semibold">
+                  Charges
+                </th>
+                <th className="border-b border-gray-300 px-3 py-2 font-semibold text-center">
+                  Current
+                </th>
+                <th className="border-b border-gray-300 px-3 py-2 font-semibold text-center">
+                  Predicted
+                </th>
               </tr>
             </thead>
 
             <tbody>
               <tr>
                 <td className="border-b px-3 py-2 flex items-center gap-2">
-                  1. Energy Charges <ToolTip content="(energy_kWh * ₹6.75/kWh)" />
+                  1. Energy Charges <ToolTip content="(energy_kWh × ₹6.75/kWh)" />
                 </td>
                 <td className="border-b px-3 py-2 text-center">
                   ₹ {billValues.energy.toFixed(2)}
@@ -104,7 +178,7 @@ const Bill = () => {
 
               <tr>
                 <td className="border-b px-3 py-2 flex items-center gap-2">
-                  2. Fixed Charges <ToolTip content="(sanctioned_load_kW * ₹50/kW)" />
+                  2. Fixed Charges <ToolTip content="(sanctioned_load × ₹50)" />
                 </td>
                 <td className="border-b px-3 py-2 text-center">
                   ₹ {billValues.fixed.toFixed(2)}

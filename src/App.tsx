@@ -21,8 +21,14 @@ const App = () => {
           <Bill />
           {/* <Timer /> */}
           <div className="grid grid-cols-2 gap-4 rounded-xl shadow-lg bg-accent mt-2 h-full p-2">
-            <TimerCustom />
-            <Threshold />
+            <TimerCustom
+              brokerUrl="wss://test.mosquitto.org:8081"
+              topic="power/relay"
+            />
+            <Threshold
+              brokerUrl="wss://test.mosquitto.org:8081"
+              topic="power/relay"
+            />
             <IdleLoad />
             <EnergyEfficiency />
           </div>

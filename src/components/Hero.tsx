@@ -7,23 +7,23 @@ import { subscribeToReadings } from "../lib/readings";
 
 const Hero = () => {
   const [rating, setRating] = useState(Ratings[0].title);
-  const [current, setCurrent] = useState(0);
+  const [power, setPower] = useState(0);
 
-  // Subscribe to live current readings via MQTT
+  // Subscribe to live power readings via MQTT
   useEffect(() => {
     const unsubscribe = subscribeToReadings((data) => {
-      setCurrent(data.current || 0);
+      setPower(data.power || 0);
     });
     return () => unsubscribe();
   }, []);
 
-  // Dynamically adjust power load category
+  // Dynamically adjust power load category based on power (W)
   useEffect(() => {
-    if (current == 0) setRating(Ratings[0].title);
-    else if (current > 0 && current <= 0.05) setRating(Ratings[2].title);
-    else if (current > 10) setRating(Ratings[3].title);
-    else setRating(Ratings[1].title);
-  }, [current]);
+    if (power === 0) setRating(Ratings[0].title);
+    else if (power > 0 && power <= 10) setRating(Ratings[1].title);
+    else if (power > 10 && power <= 30) setRating(Ratings[2].title);
+    else if (power > 30) setRating(Ratings[3].title);
+  }, [power]);
 
   const activeRating = Ratings.find((r) => r.title === rating);
 
@@ -65,7 +65,7 @@ const Hero = () => {
               <p>Off</p>
               <p>On</p>
             </div>
-            {/* 🔌 Pass broker + topic here */}
+            {/* Pass broker + topic here */}
             <Switcher
               size={1.5}
               brokerUrl="wss://test.mosquitto.org:8081"
@@ -107,42 +107,36 @@ const Hero = () => {
           titleSvg="/Current.svg"
           unit="A"
           graphColor="var(--chart-2)"
-        />{" "}
-        {/* Blue */}
+        />
         <Reading
           title="Voltage"
           titleSvg="/Voltage.svg"
           unit="V"
           graphColor="var(--chart-3)"
-        />{" "}
-        {/* Yellow */}
+        />
         <Reading
           title="Power"
           titleSvg="/Power.svg"
           unit="W"
           graphColor="var(--chart-1)"
-        />{" "}
-        {/* Red */}
+        />
         <Reading
           title="Energy"
           titleSvg="/Energy.svg"
           unit="kWh"
           graphColor="var(--chart-4)"
-        />{" "}
-        {/* Green */}
+        />
         <Reading
           title="Frequency"
           titleSvg="/Frequency.svg"
           unit="Hz"
           graphColor="var(--chart-5)"
-        />{" "}
-        {/* Purple */}
+        />
         <Reading
           title="Power Factor"
           titleSvg="/PowerFactor.svg"
           graphColor="var(--chart-6)"
-        />{" "}
-        {/* Orange */}
+        />
       </div>
     </div>
   );
@@ -153,43 +147,36 @@ export default Hero;
 // -------------------- Power Rating Categories --------------------
 const Ratings = [
   {
-    title: "No Load (0A)",
+    title: "No Load (0W)",
     image: "/lowload.jpg",
-    heading: "Typical Low Load Appliances",
+    heading: "No Power Consumption",
+    appliances: ["No devices currently consuming power"],
+  },
+  {
+    title: "Low Power Load (0-10W)",
+    image: "/lowload.jpg",
+    heading: "Typical Low Power Devices",
     appliances: [
-      "LED bulbs, lamps, or night lights",
-      "Mobile and laptop chargers",
-      "Wi-Fi routers and alarm clocks",
+      "LED bulbs, chargers, Wi-Fi routers",
+      "Clocks, mobile devices, or small lamps",
     ],
   },
   {
-    title: "Low Power Load (5-10A)",
-    image: "/lowload.jpg",
-    heading: "Typical Low Load Appliances",
-    appliances: [
-      "LED bulbs, lamps, or night lights",
-      "Mobile and laptop chargers",
-      "Wi-Fi routers and alarm clocks",
-    ],
-  },
-  {
-    title: "Medium Power Load (15-30A)",
+    title: "Medium Power Load (10-30W)",
     image: "/mediumload.jpg",
-    heading: "Typical Medium Load Appliances",
+    heading: "Typical Medium Power Devices",
     appliances: [
-      "Televisions, desktop PCs",
-      "Refrigerators and microwave ovens",
-      "Ceiling fans and water pumps",
+      "Televisions, refrigerators, desktop PCs",
+      "Microwaves, fans, or water pumps",
     ],
   },
   {
-    title: "High Power Load (30-50A)",
+    title: "High Power Load (Above 30W)",
     image: "/highload.jpg",
-    heading: "Typical High Load Appliances",
+    heading: "Typical High Power Devices",
     appliances: [
-      "Air conditioners and geysers",
-      "Induction cooktops or irons",
-      "Washing machines or heaters",
+      "Air conditioners, geysers, or irons",
+      "Heaters, washing machines, induction cooktops",
     ],
   },
 ];

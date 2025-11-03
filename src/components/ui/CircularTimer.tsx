@@ -1,61 +1,89 @@
 import React, { useEffect, useState } from "react";
+import clsx from "clsx";
 
-const CircularTimer = ({ duration = 10 }) => {
+interface CircularTimerProps {
+  duration: number;
+  circleWidth?: number;
+  strokeColor?: string;
+  className?: string;
+}
+
+const CircularTimer: React.FC<CircularTimerProps> = ({
+  duration,
+  circleWidth = 250,
+  strokeColor = "#12c2e9",
+  className = "",
+}) => {
   const [timeLeft, setTimeLeft] = useState(duration);
 
-  const radius = 60;
-  const stroke = 10;
-  const normalizedRadius = radius - stroke / 2;
-  const circumference = 2 * Math.PI * normalizedRadius;
+  const radius = 30;
+  const strokeWidth = 8;
+  const normalizedRadius = radius + strokeWidth / 2;
+  const dashArray = 2 * Math.PI * radius;
 
-  const strokeDashoffset =
-    circumference - (timeLeft / duration) * circumference;
+  // Start at 0% fill → goes to 100%
+  const percentage = duration > 0 ? ((duration - timeLeft) / duration) * 100 : 0;
+  const dashOffset = dashArray - (dashArray * percentage) / 100;
 
   useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [timeLeft]);
+    if (duration <= 0) return;
+
+    setTimeLeft(duration);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [duration]);
 
   return (
-    <div className="relative flex justify-center items-center">
+    <div
+      className={clsx(
+        "relative aspect-square w-full h-auto max-w-[150px]",
+        className
+      )}
+      style={{ width: `${circleWidth}px` }}
+    >
       <svg
-        height={radius * 2}
-        width={radius * 2}
-        className="-rotate-90" // so progress starts from top
+        viewBox={`0 0 ${normalizedRadius * 2} ${normalizedRadius * 2}`}
+        className="w-full h-full"
       >
-        {/* Background Circle */}
+        {/* Background circle */}
         <circle
-          stroke="#d1d5db"
-          fill="transparent"
-          strokeWidth={stroke}
-          r={normalizedRadius}
-          cx={radius}
-          cy={radius}
+          cx={normalizedRadius}
+          cy={normalizedRadius}
+          r={radius}
+          strokeWidth={strokeWidth}
+          className="fill-none stroke-[#d3d3d4]"
         />
 
-        {/* Progress Circle */}
+        {/* Progress circle */}
         <circle
-          stroke="#22c55e"
-          fill="transparent"
-          strokeWidth={stroke}
+          cx={normalizedRadius}
+          cy={normalizedRadius}
+          r={radius}
+          strokeWidth={strokeWidth}
           strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          cx={radius}
-          cy={radius}
+          className="fill-none"
           style={{
-            transition: "stroke-dashoffset 1s linear",
+            stroke: strokeColor,
+            strokeDasharray: dashArray,
+            strokeDashoffset: dashOffset,
+            transition: "stroke-dashoffset 1s linear", // smooth one-way
           }}
+          transform={`rotate(-90 ${normalizedRadius} ${normalizedRadius})`}
         />
       </svg>
 
-      {/* Center Text */}
-      <div className="absolute text-black text-xl font-semibold">
-        {timeLeft}
+      {/* Center countdown */}
+      <div className="absolute inset-0 flex items-center justify-center text-2xl font-bold text-black">
+        {timeLeft}s
       </div>
     </div>
   );
