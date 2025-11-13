@@ -16,7 +16,7 @@ const TimerCustom = ({ brokerUrl, topic }: TimerCustomProps) => {
   const [connected, setConnected] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
 
-  // Connect to MQTT broker
+  // MQTT connection setup (same logic as Switcher)
   useEffect(() => {
     const mqttClient = mqtt.connect(brokerUrl);
     setClient(mqttClient);
@@ -43,16 +43,29 @@ const TimerCustom = ({ brokerUrl, topic }: TimerCustomProps) => {
       return;
     }
 
-    setIsRunning(true);
-    console.log(`⏱️ Timer started for ${duration} seconds`);
+    if (!client || !connected) {
+      alert("MQTT not connected!");
+      return;
+    }
 
-    // After X seconds → publish "OFF"
+    // Step 1: Turn ON relay immediately
+    const messageOn = "ON";
+    client.publish(topic, messageOn);
+    console.log(` Published "${messageOn}" to ${topic}`);
+    console.log(" Relay ON");
+
+    setIsRunning(true);
+    console.log(` Timer started for ${duration} seconds`);
+
+    //  Step 2: After X seconds, turn OFF relay
     setTimeout(() => {
+      const messageOff = "OFF";
       if (client && connected) {
-        client.publish(topic, "relay/off");
-        console.log(`📡 Published "relay/off" to ${topic}`);
+        client.publish(topic, messageOff);
+        console.log(` Published "${messageOff}" to ${topic}`);
+        console.log(" Relay OFF");
       } else {
-        console.warn("⚠️ Not connected to MQTT broker");
+        console.warn(" Not connected to MQTT broker");
       }
       setIsRunning(false);
     }, duration * 1000);

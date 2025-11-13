@@ -9,9 +9,8 @@ const NavBar = () => {
     <nav className="mt-2 py-4 px-6 rounded-xl bg-zinc-200">
       <div className="grid grid-cols-3 items-center">
         <div className="flex items-center">
-          <Sprout fill="green" />
-          <Plug fill="green" />
-          <h2 className="text-2xl font-bold ml-2">EcoPlug</h2>
+          <img src="/Logo.png" className="size-12 rounded-xl" alt="" />
+          <h1 className="text-2xl font-bold ml-4">Smart - EcoPlug</h1>
         </div>
 
         <div className="justify-self-center bg-black py-2 px-6 rounded-xl">
@@ -21,7 +20,7 @@ const NavBar = () => {
             colorTo="#06b6d4"
             className="text-xl font-semibold tracking-tight"
           >
-            IoT-Project
+            IoT Plug Dashboard
           </AnimatedGradientText>
         </div>
 
@@ -30,7 +29,7 @@ const NavBar = () => {
             Status: <StatusIcon />
             <span className="font-semibold tracking-tighter">Connected</span>
           </div>
-          <div className="inline-flex items-center gap-2">
+          {/* <div className="inline-flex items-center gap-2">
             IP Address: <span>127.0.0.1</span>
             <Modal>
               <Button
@@ -41,7 +40,7 @@ const NavBar = () => {
                 <h3>Edit IP</h3>
               </Button>{" "}
             </Modal>
-          </div>
+          </div> */}
         </div>
       </div>
     </nav>

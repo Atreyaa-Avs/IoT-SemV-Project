@@ -32,16 +32,13 @@ const Switcher = ({ size = 1, brokerUrl, topic }: SwitcherProps) => {
     };
   }, [brokerUrl]);
 
-  // Log when relay state changes
+  // Log relay state
   useEffect(() => {
-    if (isChecked) {
-      console.log("🔌 Relay ON");
-    } else {
-      console.log("⚡ Relay OFF");
-    }
+    console.log(isChecked ? "Relay ON" : "Relay OFF");
   }, [isChecked]);
 
-  const handleCheckboxChange = () => {
+  // Handle switch toggle
+  const handleChange = () => {
     const newState = !isChecked;
     setIsChecked(newState);
 
@@ -54,61 +51,60 @@ const Switcher = ({ size = 1, brokerUrl, topic }: SwitcherProps) => {
     }
   };
 
-  const scale = {
-    trackWidth: 56 * size,
-    trackHeight: 20 * size,
-    dotSize: 24 * size,
-    dotTranslate: 32 * size,
-  };
-
   return (
-    <label className="flex cursor-pointer select-none items-center">
-      <div
-        className="relative"
-        style={{ width: scale.trackWidth, height: scale.dotSize }}
+    <div
+      className="relative mt-2 ml-5"
+      style={{
+        transform: `scale(${size})`,
+        width: 100,
+        height: 35,
+        background: "#d6d6d6",
+        borderRadius: "50px",
+        boxShadow: "inset -8px -8px 16px #ffffff, inset 8px 8px 16px #b0b0b0",
+      }}
+    >
+      {/* Hidden checkbox */}
+      <input
+        id="toggle-switch"
+        type="checkbox"
+        checked={isChecked}
+        onChange={handleChange}
+        className="hidden"
+      />
+
+      {/* Label as clickable area */}
+      <label
+        htmlFor="toggle-switch"
+        className="absolute top-1/2 left-0 w-full h-full -translate-y-1/2 rounded-[50px] overflow-hidden cursor-pointer"
       >
-        <input
-          type="checkbox"
-          checked={isChecked}
-          onChange={handleCheckboxChange}
-          className="sr-only"
-        />
-
-        {/* Track */}
+        {/* Toggle Knob */}
         <div
-          className={`rounded-full shadow-inner transition-colors duration-300 ${
-            isChecked ? "bg-[#EAEEFB]" : "bg-gray-400"
+          className={`absolute flex items-center justify-start px-2 rounded-[50px] transition-all duration-300 ease-in-out ${
+            isChecked
+              ? "left-[40px] bg-linear-to-br from-[#cfcfcf] to-[#a9a9a9]"
+              : "left-[5px] bg-linear-to-br from-[#d9d9d9] to-[#bfbfbf]"
           }`}
           style={{
-            width: scale.trackWidth,
-            height: scale.trackHeight,
-          }}
-        ></div>
-
-        {/* Dot */}
-        <div
-          className={`absolute flex items-center justify-center rounded-full bg-white shadow-md transition-all duration-300 ease-in-out ${
-            isChecked ? "translate-x-[calc(var(--tx))]" : "translate-x-0"
-          }`}
-          style={{
-            width: scale.dotSize,
-            height: scale.dotSize,
-            top: `-${(scale.dotSize - scale.trackHeight) / 2}px`,
-            ["--tx" as any]: `${scale.dotTranslate}px`,
+            width: 50,
+            height: 25,
+            top: 5,
+            boxShadow: isChecked
+              ? "-4px -4px 8px #ffffff, 4px 4px 8px #8a8a8a"
+              : "-4px -4px 8px #ffffff, 4px 4px 8px #b0b0b0",
           }}
         >
-          <span
-            className={`rounded-full border transition-colors duration-300 ${
-              isChecked ? "bg-blue-500 border-white" : "bg-black border-white"
+          {/* LED Light */}
+          <div
+            className={`relative rounded-full transition-all duration-300 ease-in-out ${
+              isChecked
+                ? "left-[25px] bg-green-500 shadow-[0_0_15px_4px_rgba(255,255,0,0.8)]"
+                : "left-0 bg-gray-500 shadow-[0_0_10px_2px_rgba(0,0,0,0.2)]"
             }`}
-            style={{
-              width: 12 * size,
-              height: 12 * size,
-            }}
-          ></span>
+            style={{ width: 10, height: 10, top: 1 }}
+          ></div>
         </div>
-      </div>
-    </label>
+      </label>
+    </div>
   );
 };
 

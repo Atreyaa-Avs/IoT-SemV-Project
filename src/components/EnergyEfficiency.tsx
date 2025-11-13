@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Leaf } from "lucide-react";
-import { subscribeToReadings } from "../lib/readings"; // ✅ your shared MQTT module
+import { subscribeToReadings } from "../lib/readings";
 
 interface EnergyEfficiencyProps {
   avgUsage?: number; // default 5 kWh daily average
@@ -8,57 +8,83 @@ interface EnergyEfficiencyProps {
 
 const EnergyEfficiency: React.FC<EnergyEfficiencyProps> = ({ avgUsage = 5 }) => {
   const [todayUsage, setTodayUsage] = useState(0); // accumulated kWh
-  const [efficiency, setEfficiency] = useState(0);
+  const [efficiency, setEfficiency] = useState(100);
 
   useEffect(() => {
-    // Subscribe to live readings
+    // Subscribe to live power/energy readings
     const unsubscribe = subscribeToReadings((data) => {
-      // data.energy — cumulative Wh from your ESP32 PZEM
+      // data.energy = cumulative Wh from PZEM / ESP32
       if (!isNaN(data.energy)) {
-        // convert Wh → kWh
-        setTodayUsage(data.energy / 1000);
+        // Convert Wh → kWh
+        const kWh = data.energy / 1000;
+        setTodayUsage(kWh);
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Calculate efficiency dynamically
+  // Compute efficiency as "how much of avgUsage is saved"
   useEffect(() => {
     if (avgUsage > 0) {
-      const score = ((avgUsage - todayUsage) / avgUsage) * 100;
+      let score = ((avgUsage - todayUsage) / avgUsage) * 100;
+
+      // Clamp between 0–100
+      score = Math.min(Math.max(score, 0), 100);
+
       setEfficiency(score);
     }
   }, [todayUsage, avgUsage]);
 
+  // Determine color category
+  const color =
+    efficiency > 70
+      ? "text-green-600"
+      : efficiency > 40
+      ? "text-yellow-500"
+      : "text-red-600";
+
+  const leafFill =
+    efficiency > 70
+      ? "green"
+      : efficiency > 40
+      ? "gold"
+      : "red";
+
   return (
-    <div className="flex flex-col bg-white p-2 rounded-xl">
-      <div className="flex mx-auto mt-2">
-        <h3 className="inline-flex justify-center items-center text-xl text-center font-semibold">
-          <span className="mr-1">
-            <Leaf fill={efficiency > 0 ? "green" : "red"} />
-          </span>
-          Energy Efficiency Score
+    <div className="flex flex-col bg-white p-4 rounded-xl shadow-sm">
+      {/* Header */}
+      <div className="flex justify-center mt-2">
+        <h3 className="inline-flex items-center text-xl font-semibold text-center">
+          <Leaf fill={leafFill} className="mr-2" />
+          Energy Efficiency
         </h3>
       </div>
 
-      <div className="mt-4">
-        <p className="text-center text-sm">
-          ((avgUsage - todayUsage) / avgUsage) * 100
-        </p>
+      {/* Formula display */}
+      <p className="text-center text-sm mt-2 text-gray-500">
+        Efficiency = ((Avg - Today) / Avg) × 100
+      </p>
 
-        <p
-          className={`text-center text-6xl mt-4 ${
-            efficiency > 0 ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {efficiency.toFixed(1)}%
-        </p>
+      {/* Score */}
+      <p className={`text-center text-6xl font-bold mt-4 ${color}`}>
+        {efficiency.toFixed(1)}%
+      </p>
 
-        <p className="text-center text-xs mt-2 text-gray-500">
-          Today: {todayUsage.toFixed(2)} kWh | Avg: {avgUsage} kWh
-        </p>
-      </div>
+      {/* Usage info */}
+      <p className="text-center text-sm mt-2 text-gray-500">
+        Today: <span className="font-semibold">{todayUsage.toFixed(2)}</span> kWh |
+        Target: <span className="font-semibold">{avgUsage}</span> kWh
+      </p>
+
+      {/* Status Message */}
+      <p className="text-center text-sm mt-2 font-medium">
+        {efficiency > 70
+          ? "Excellent Efficiency"
+          : efficiency > 40
+          ? "Moderate Usage"
+          : "High Consumption"}
+      </p>
     </div>
   );
 };

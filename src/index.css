@@ -46,6 +46,18 @@
       background-position: var(--bg-size, 300%) 0;
     }
   }
+  --animate-shine: shine var(--duration) infinite linear;
+  @keyframes shine {
+    0% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
+    to {
+      background-position: 0% 0%;
+    }
+  }
 }
 
 :root {
@@ -74,6 +86,10 @@
   --chart-4: oklch(0.828 0.189 84.429); /* Green */
   --chart-5: oklch(0.769 0.188 70.08); /* Purple */
   --chart-6: oklch(0.75 0.19 45); /* Orange */
+  --chart-7: oklch(0.72 0.14 200.5); /* Teal */
+  --chart-8: oklch(0.78 0.23 340.1); /* Pink / Magenta */
+  --chart-9: oklch(0.55 0.09 60); /* Brown / Earth tone */
+  --chart-10: oklch(0.82 0.06 210); /* Light Grayish Cyan */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);

@@ -20,18 +20,18 @@ const Threshold = ({ brokerUrl, topic }: ThresholdProps) => {
   const [connected, setConnected] = useState(false);
   const [chartData, setChartData] = useState<{ time: string; value: number }[]>([]);
 
-  // 🔹 Connect to MQTT broker (same logic as your Switcher)
+  // 🔹 Connect to MQTT broker (same as Switcher)
   useEffect(() => {
     const mqttClient = mqtt.connect(brokerUrl);
     setClient(mqttClient);
 
     mqttClient.on("connect", () => {
-      console.log("✅ Connected to MQTT Broker");
+      console.log("Connected to MQTT Broker");
       setConnected(true);
     });
 
     mqttClient.on("error", (err) => {
-      console.error("❌ MQTT Connection Error:", err);
+      console.error("MQTT Connection Error:", err);
       mqttClient.end();
     });
 
@@ -40,7 +40,7 @@ const Threshold = ({ brokerUrl, topic }: ThresholdProps) => {
     };
   }, [brokerUrl]);
 
-  // 🔹 Subscribe to live power readings (from your sensor data)
+  // 🔹 Subscribe to live power readings (sensor updates)
   useEffect(() => {
     const unsubscribe = subscribeToReadings((data) => {
       const newPower = data.power || 0;
@@ -62,17 +62,31 @@ const Threshold = ({ brokerUrl, topic }: ThresholdProps) => {
     return () => unsubscribe();
   }, []);
 
-  // 🔹 If threshold exceeded, publish "relay/off"
+  // 🔹 If power exceeds threshold → publish "OFF"
   useEffect(() => {
     const thresholdVal = parseFloat(threshold);
     if (thresholdVal > 0 && power > thresholdVal) {
-      console.warn(`🚨 Power (${power}W) exceeded threshold (${thresholdVal}W)! Turning relay OFF.`);
+      console.warn(` Power (${power}W) exceeded threshold (${thresholdVal}W)! Turning relay OFF.`);
       if (client && connected) {
-        const message = "relay/off";
+        const message = "OFF";
         client.publish(topic, message);
-        console.log(`📡 Published "${message}" to ${topic}`);
+        console.log(` Published "${message}" to ${topic}`);
+        console.log(" Relay OFF");
       } else {
-        console.warn("⚠️ Not connected to MQTT broker");
+        console.warn(" Not connected to MQTT broker");
+      }
+    }
+  }, [power, threshold, client, connected, topic]);
+
+  // Optional: Turn ON again when power drops below threshold
+  useEffect(() => {
+    const thresholdVal = parseFloat(threshold);
+    if (thresholdVal > 0 && power < thresholdVal * 0.9) { // hysteresis to prevent rapid toggling
+      if (client && connected) {
+        const message = "ON";
+        client.publish(topic, message);
+        console.log(`Published "${message}" to ${topic}`);
+        console.log("Relay ON");
       }
     }
   }, [power, threshold, client, connected, topic]);

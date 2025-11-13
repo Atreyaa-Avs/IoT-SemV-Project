@@ -1,4 +1,4 @@
-import mqtt from "mqtt";
+import mqtt from "mqtt"; // ✅ ensures proper bundling in browsers
 
 type ReadingData = {
   current: number;
@@ -7,6 +7,8 @@ type ReadingData = {
   energy: number;
   frequency: number;
   powerfactor: number; // ✅ lowercase and consistent
+  apparentpower: number;
+  reactivepower: number;
 };
 
 // Initialize readings
@@ -17,13 +19,17 @@ const readings: ReadingData = {
   energy: 0,
   frequency: 0,
   powerfactor: 0,
+  apparentpower: 0,
+  reactivepower: 0,
 };
 
 // List of callbacks (for live updates in components)
 let subscribers: ((data: ReadingData) => void)[] = [];
 
-// MQTT Client Setup
-const client = mqtt.connect("wss://test.mosquitto.org:8081");
+console.log("🌐 Connecting to MQTT broker...");
+const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt", {
+  reconnectPeriod: 1000,
+});
 
 client.on("connect", () => {
   console.log("✅ Connected to MQTT Broker!");
@@ -34,14 +40,39 @@ client.on("connect", () => {
     "power/power",
     "power/energy",
     "power/frequency",
-    "power/powerfactor", // ✅ match ESP32 topic
+    "power/powerfactor",
+    "power/apparentpower",
+    "power/reactivepower",
   ];
 
-  topics.forEach((topic) => client.subscribe(topic));
+  topics.forEach((topic) => {
+    client.subscribe(topic, (err) => {
+      if (err) console.error(`❌ Failed to subscribe ${topic}:`, err);
+      else console.log(`📡 Subscribed to: ${topic}`);
+    });
+  });
 });
 
+client.on("reconnect", () => {
+  console.warn("♻️ Reconnecting to MQTT broker...");
+});
+
+client.on("close", () => {
+  console.warn("🔌 MQTT connection closed");
+});
+
+client.on("offline", () => {
+  console.warn("⚠️ MQTT client is offline");
+});
+
+client.on("error", (err) => {
+  console.error("❌ MQTT Error:", err.message);
+});
+
+// -------------------- Handle Incoming Messages --------------------
 client.on("message", (topic, message) => {
   const val = parseFloat(message.toString());
+  console.log(`📩 Message received | ${topic}: ${val}`);
 
   switch (topic) {
     case "power/current":
@@ -62,21 +93,33 @@ client.on("message", (topic, message) => {
     case "power/powerfactor":
       readings.powerfactor = val;
       break;
+    case "power/apparentpower":
+      readings.apparentpower = val;
+      break;
+    case "power/reactivepower":
+      readings.reactivepower = val;
+      break;
+    default:
+      console.warn("⚠️ Unknown topic:", topic);
   }
 
   // Notify all subscribers when data changes
   subscribers.forEach((cb) => cb({ ...readings }));
 });
 
+// -------------------- Public Functions --------------------
+
 // ✅ Subscribe to live readings
 export function subscribeToReadings(callback: (data: ReadingData) => void) {
   subscribers.push(callback);
+  console.log("👂 New subscriber added. Total:", subscribers.length);
   // Send initial state immediately
   callback({ ...readings });
 
   // Return unsubscribe function
   return () => {
     subscribers = subscribers.filter((cb) => cb !== callback);
+    console.log("❎ Subscriber removed. Total:", subscribers.length);
   };
 }
 

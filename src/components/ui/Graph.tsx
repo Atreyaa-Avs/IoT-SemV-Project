@@ -36,7 +36,7 @@ export function Graph({
   const gradientId = `fill-${Math.random().toString(36).substring(2, 8)}`;
 
   return (
-    <Card className="p-2 px-0 w-full">
+    <Card className="p-2 px-0">
       <CardContent>
         <ChartContainer config={chartConfig}>
           <AreaChart data={data} margin={{ left: 12, right: 12 }}>

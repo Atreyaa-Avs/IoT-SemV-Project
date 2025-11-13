@@ -2,8 +2,10 @@
 import { useEffect, useState } from "react";
 import Switcher from "./Switcher";
 import { Lightbulb, Tv, AirVent } from "lucide-react";
-import Reading from "./Readings";
 import { subscribeToReadings } from "../lib/readings";
+import { ShineBorder } from "./ui/shine-border";
+import ReadingCard from "./ReadingsCard";
+import Reading from "./Readings";
 
 const Hero = () => {
   const [rating, setRating] = useState(Ratings[0].title);
@@ -28,11 +30,15 @@ const Hero = () => {
   const activeRating = Ratings.find((r) => r.title === rating);
 
   return (
-    <div className="flex bg-accent p-4 mt-4 rounded-xl gap-6">
+    <div className="flex p-4 mt-4 rounded-xl gap-6 bg-[radial-gradient(circle,#6b7280_1px,transparent_1px)] bg-size-[10px_10px] bg-gray-100">
       {/* Left: Device Info + Switch */}
-      <div className="flex items-center gap-4 w-max">
-        {/* Image */}
-        <div>
+      <div className="flex flex-col items-center gap-4 w-max">
+        <div className="flex w-max rounded-xl gap-4 bg-neutral-200 p-3 relative overflow-hidden">
+          <ShineBorder
+            borderWidth={4}
+            shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+          />
+          {/* Image */}
           <div className="overflow-hidden rounded-2xl size-72">
             <img
               src={activeRating?.image}
@@ -40,63 +46,77 @@ const Hero = () => {
               className="w-full h-full object-cover"
             />
           </div>
-        </div>
+          {/* Info */}
+          <div className="flex flex-col gap-7 mt-2 h-full">
+            <h1 className="inline-flex flex-col text-lg">
+              Smart IoT Plug is Connected to:{" "}
+              <span
+                className={`mt-2 text-2xl font-bold ${
+                  rating.includes("Low")
+                    ? "text-green-500"
+                    : rating.includes("Medium")
+                    ? "text-yellow-500"
+                    : "text-red-500"
+                }`}
+              >
+                {rating}
+              </span>
+            </h1>
+            {/* Relay Toggle via MQTT */}
+            <div className="flex flex-col w-fit gap-1">
+              <div className="flex justify-between min-w-[110%] text-sm font-medium text-gray-700">
+                <p>Off</p>
+                <p>On</p>
+              </div>
 
-        {/* Info */}
-        <div className="flex flex-col gap-5 mt-2">
-          <h1 className="inline-flex flex-col text-lg">
-            Smart Plug is Connected to:{" "}
-            <span
-              className={`text-2xl font-bold ${
-                rating.includes("Low")
-                  ? "text-green-500"
-                  : rating.includes("Medium")
-                  ? "text-yellow-500"
-                  : "text-red-500"
-              }`}
-            >
-              {rating}
-            </span>
-          </h1>
-
-          {/* Relay Toggle via MQTT */}
-          <div className="flex flex-col w-fit gap-1">
-            <div className="flex justify-between text-sm font-medium text-gray-700">
-              <p>Off</p>
-              <p>On</p>
+              {/* Pass broker + topic here */}
+              <Switcher
+                size={1.5}
+                brokerUrl="wss://broker.hivemq.com:8884/mqtt"
+                topic="power/relay"
+              />
             </div>
-            {/* Pass broker + topic here */}
-            <Switcher
-              size={1.5}
-              brokerUrl="wss://test.mosquitto.org:8081"
-              topic="power/relay"
-            />
+            {/* Appliance Info */}
+            <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm text-sm text-gray-100 space-y-2">
+              <h2
+                className={`font-semibold flex items-center gap-2 -ml-4 ${
+                  rating.includes("Low")
+                    ? "text-green-800"
+                    : rating.includes("Medium")
+                    ? "text-yellow-800"
+                    : "text-red-800"
+                }`}
+              >
+                {rating.includes("Low") && <Lightbulb className="size-5" />}
+                {rating.includes("Medium") && <Tv className="size-5" />}
+                {rating.includes("High") && <AirVent className="size-5" />}
+                {activeRating?.heading}
+              </h2>
+              <ul className="list-disc list-inside">
+                {activeRating?.appliances.map((item, i) => (
+                  <li key={i} className="text-black">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
-
-          {/* Appliance Info */}
-          <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm text-sm text-gray-100 space-y-2">
-            <h2
-              className={`font-semibold flex items-center gap-2 -ml-4 ${
-                rating.includes("Low")
-                  ? "text-green-800"
-                  : rating.includes("Medium")
-                  ? "text-yellow-800"
-                  : "text-red-800"
-              }`}
-            >
-              {rating.includes("Low") && <Lightbulb className="size-5" />}
-              {rating.includes("Medium") && <Tv className="size-5" />}
-              {rating.includes("High") && <AirVent className="size-5" />}
-              {activeRating?.heading}
-            </h2>
-            <ul className="list-disc list-inside">
-              {activeRating?.appliances.map((item, i) => (
-                <li key={i} className="text-black">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
+        </div>
+        <div className="flex flex-1 w-full justify-between gap-4">
+          <ReadingCard
+            title="Apparent Power"
+            titleSvg="/ApparentPower.svg"
+            unit="VA"
+            graphColor="var(--chart-7)"
+            formula="V x I"
+          />
+          <ReadingCard
+            title="Reactive Power"
+            titleSvg="/ReactivePower.svg"
+            unit="VAR"
+            graphColor="var(--chart-9)"
+            formula="√(S² - P²)"
+          />
         </div>
       </div>
 
@@ -107,35 +127,41 @@ const Hero = () => {
           titleSvg="/Current.svg"
           unit="A"
           graphColor="var(--chart-2)"
+          formula="I"
         />
         <Reading
           title="Voltage"
           titleSvg="/Voltage.svg"
           unit="V"
           graphColor="var(--chart-3)"
+          formula="V"
         />
         <Reading
           title="Power"
           titleSvg="/Power.svg"
           unit="W"
           graphColor="var(--chart-1)"
+          formula="V x I x Pf"
         />
         <Reading
           title="Energy"
-          titleSvg="/Energy.svg"
+          titleSvg="/Energy2.svg"
           unit="kWh"
           graphColor="var(--chart-4)"
+          formula="(P x t) / 1000"
         />
         <Reading
           title="Frequency"
           titleSvg="/Frequency.svg"
           unit="Hz"
           graphColor="var(--chart-5)"
+          formula="f"
         />
         <Reading
           title="Power Factor"
           titleSvg="/PowerFactor.svg"
           graphColor="var(--chart-6)"
+          formula="P / (V x I)"
         />
       </div>
     </div>
