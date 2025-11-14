@@ -1,7 +1,7 @@
 "use client";
 
 import { ActivityIcon } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { subscribeToReadings } from "../lib/readings";
 
 const IdleLoad = () => {
@@ -44,7 +44,7 @@ const IdleLoad = () => {
   }, [power, lastActiveTime]);
 
   return (
-    <div className="flex flex-col bg-white p-4 rounded-xl shadow-sm gap-3">
+    <div className="flex flex-col p-4 rounded-xl shadow-sm gap-3 w-full">
       {/* Header */}
       <div className="flex flex-col justify-center mt-2 text-center">
         <h3 className="inline-flex justify-center items-center text-xl font-semibold text-center">

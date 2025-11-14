@@ -90,6 +90,8 @@
   --chart-8: oklch(0.78 0.23 340.1); /* Pink / Magenta */
   --chart-9: oklch(0.55 0.09 60); /* Brown / Earth tone */
   --chart-10: oklch(0.82 0.06 210); /* Light Grayish Cyan */
+  --color-actual: #4f46e5;
+  --color-predicted: #f97316;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);

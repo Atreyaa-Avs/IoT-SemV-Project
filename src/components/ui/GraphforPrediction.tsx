@@ -19,38 +19,39 @@ interface GraphDemoProps {
 }
 
 const GraphforPredictiton = ({ actualData, predictedData }: GraphDemoProps) => {
-  const combined = [
-    ...actualData.map((d) => ({ ...d, type: "Actual" })),
-    ...predictedData.map((d) => ({ ...d, type: "Predicted" })),
-  ];
+  // Prepare combined data with separate keys
+  const combined = actualData.map((d, i) => ({
+    time: d.time,
+    actual: d.energy,
+    predicted: predictedData[i]?.energy ?? null, // align indices
+  }));
 
   return (
-    <div style={{ width: "100%", height: 280 }}>
+    <div style={{ width: "100%", height: 350 }}>
       <ResponsiveContainer>
         <LineChart data={combined}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" minTickGap={25} />
-          <YAxis />
+          <YAxis tickFormatter={(v) => v.toFixed(3)} />{" "}
+          {/* show small values */}
           <Tooltip />
           <Legend />
           <Line
             type="monotone"
-            dataKey="energy"
+            dataKey="actual"
             name="Actual"
             stroke="#007BFF"
             dot={false}
             isAnimationActive={false}
-            data={actualData}
           />
           <Line
             type="monotone"
-            dataKey="energy"
+            dataKey="predicted"
             name="Predicted"
             stroke="#FF7300"
             dot={false}
             strokeDasharray="5 5"
             isAnimationActive={false}
-            data={predictedData}
           />
         </LineChart>
       </ResponsiveContainer>

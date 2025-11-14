@@ -52,7 +52,7 @@ const EnergyEfficiency: React.FC<EnergyEfficiencyProps> = ({ avgUsage = 5 }) => 
       : "red";
 
   return (
-    <div className="flex flex-col bg-white p-4 rounded-xl shadow-sm">
+    <div className="flex flex-col bg-white p-4 rounded-xl shadow-sm w-full">
       {/* Header */}
       <div className="flex justify-center mt-2">
         <h3 className="inline-flex items-center text-xl font-semibold text-center">
@@ -67,7 +67,7 @@ const EnergyEfficiency: React.FC<EnergyEfficiencyProps> = ({ avgUsage = 5 }) => 
       </p>
 
       {/* Score */}
-      <p className={`text-center text-6xl font-bold mt-4 ${color}`}>
+      <p className={`text-center text-5xl font-bold mt-4 ${color}`}>
         {efficiency.toFixed(1)}%
       </p>
 

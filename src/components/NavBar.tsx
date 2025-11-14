@@ -13,14 +13,14 @@ const NavBar = () => {
           <h1 className="text-2xl font-bold ml-4">Smart - EcoPlug</h1>
         </div>
 
-        <div className="justify-self-center bg-black py-2 px-6 rounded-xl">
+        <div className="justify-self-center bg-gray-200 py-2 px-6 rounded-xl">
           <AnimatedGradientText
             speed={2}
             colorFrom="#4ade80"
             colorTo="#06b6d4"
             className="text-xl font-semibold tracking-tight"
           >
-            IoT Plug Dashboard
+            IoT Smart Plug Dashboard
           </AnimatedGradientText>
         </div>
 
